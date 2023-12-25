@@ -1,12 +1,8 @@
 #include "naked_pairs.h"
 #include <stdlib.h>
 
-typedef struct {
-    int val1;
-    int val2;
-} Pair;
 
-int naked_pairs_exists(Pair *pairs, int pair_count, int val1, int val2) {
+int naked_pairs_exists(NakedPair *pairs, int pair_count, int val1, int val2) {
     for (int i = 0; i < pair_count; i++) {
         if ((pairs[i].val1 == val1 && pairs[i].val2 == val2) || (pairs[i].val1 == val2 && pairs[i].val2 == val1)) {
             return 1;
@@ -16,7 +12,7 @@ int naked_pairs_exists(Pair *pairs, int pair_count, int val1, int val2) {
 }
 
 int naked_pairs(SudokuBoard *p_board) {
-    Pair pairs[BOARD_SIZE * BOARD_SIZE];
+    NakedPair pairs[BOARD_SIZE * BOARD_SIZE];
     int pair_count = 0;
 
     for (int i = 0; i < BOARD_SIZE; i++) {

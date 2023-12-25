@@ -51,7 +51,7 @@ void find_hidden_single(Cell **p_cells, HiddenSingle *p_hidden_singles, int *p_c
                         break;
                     }
                 }
-                free(candidates);  // free the memory allocated by get_candidates
+                free(candidates);
             }
         }
     }
@@ -70,13 +70,13 @@ int hidden_singles(SudokuBoard *p_board)
         find_hidden_single(p_board->p_boxes[i], hidden_singles, &counter);
     }
 
-    int offset = 0;
+    int solved_cells = 0; // Counts cells that are solved (i.e 1 candidate)
     for (int i = 0; i < counter; i++)
     {
-        if (hidden_singles[i].p_cell->num_candidates == 1) {offset++;}
+        if (hidden_singles[i].p_cell->num_candidates == 1) {solved_cells++;}
         Cell *cell = hidden_singles[i].p_cell;
         int value = hidden_singles[i].value;
         set_candidates(cell, &value, 1);
     }
-    return counter - offset;
+    return counter - solved_cells;
 }
