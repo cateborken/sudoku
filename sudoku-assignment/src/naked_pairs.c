@@ -1,131 +1,80 @@
 #include "naked_pairs.h"
 #include <stdlib.h>
 
-int naked_pairs(SudokuBoard *p_board)
-{
-    int found = 0;
-    for (int i = 0; i < BOARD_SIZE; i++)
-    {
-        for (int j = 0; j < BOARD_SIZE; j++)
-        {
+typedef struct {
+    int val1;
+    int val2;
+} Pair;
+
+int naked_pairs_exists(Pair *pairs, int pair_count, int val1, int val2) {
+    for (int i = 0; i < pair_count; i++) {
+        if ((pairs[i].val1 == val1 && pairs[i].val2 == val2) || (pairs[i].val1 == val2 && pairs[i].val2 == val1)) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+int naked_pairs(SudokuBoard *p_board) {
+    Pair pairs[BOARD_SIZE * BOARD_SIZE];
+    int pair_count = 0;
+
+    for (int i = 0; i < BOARD_SIZE; i++) {
+        for (int j = 0; j < BOARD_SIZE; j++) {
             Cell *cell = &(p_board->data[i][j]);
             if (cell->num_candidates != 2)
                 continue;
 
             int *candidates = get_candidates(cell);
 
-            // Check row
-            for (int k = 0; k < BOARD_SIZE; k++)
-            {
-                if (k == j)
-                    continue;
-
-                Cell *other = &(p_board->data[i][k]);
-                if (other->num_candidates != 2)
-                    continue;
-
-                int *other_candidates = get_candidates(other);
-                if (candidates[0] == other_candidates[0] && candidates[1] == other_candidates[1])
-                {
-                    for (int l = 0; l < BOARD_SIZE; l++)
-                    {
-                        if (l == j || l == k)
-                            continue;
-
-                        Cell *remove = &(p_board->data[i][l]);
-                        if (is_candidate(remove, candidates[0]))
-                        {
-                            unset_candidate(remove, candidates[0]);
-                            found++;
-                        }
-                        if (is_candidate(remove, candidates[1]))
-                        {
-                            unset_candidate(remove, candidates[1]);
-                            found++;
-                        }
-                    }
+            // Check row, column, and box
+            for (int unitType = 0; unitType < 3; unitType++) {
+                Cell **unit;
+                switch (unitType) {
+                    case 0:
+                        unit = p_board->p_rows[i];
+                        break;
+                    case 1:
+                        unit = p_board->p_cols[j];
+                        break;
+                    case 2:
+                        unit = p_board->p_boxes[(i / 3) * 3 + j / 3];
+                        break;
                 }
-                free(other_candidates);
-            }
 
-            // Check column
-            for (int k = 0; k < BOARD_SIZE; k++)
-            {
-                if (k == i)
-                    continue;
-
-                Cell *other = &(p_board->data[k][j]);
-                if (other->num_candidates != 2)
-                    continue;
-
-                int *other_candidates = get_candidates(other);
-                if (candidates[0] == other_candidates[0] && candidates[1] == other_candidates[1])
-                {
-                    for (int l = 0; l < BOARD_SIZE; l++)
-                    {
-                        if (l == i || l == k)
-                            continue;
-
-                        Cell *remove = &(p_board->data[l][j]);
-                        if (is_candidate(remove, candidates[0]))
-                        {
-                            unset_candidate(remove, candidates[0]);
-                            found++;
-                        }
-                        if (is_candidate(remove, candidates[1]))
-                        {
-                            unset_candidate(remove, candidates[1]);
-                            found++;
-                        }
-                    }
-                }
-                free(other_candidates);
-            }
-
-            // Check box
-            int start_row = (i / 3) * 3;
-            int start_col = (j / 3) * 3;
-            for (int k = 0; k < 3; k++)
-            {
-                for (int l = 0; l < 3; l++)
-                {
-                    if (start_row + k == i && start_col + l == j)
+                for (int k = 0; k < BOARD_SIZE; k++) {
+                    if (unit[k] == cell)
                         continue;
 
-                    Cell *other = &(p_board->data[start_row + k][start_col + l]);
+                    Cell *other = unit[k];
                     if (other->num_candidates != 2)
                         continue;
 
                     int *other_candidates = get_candidates(other);
-                    if (candidates[0] == other_candidates[0] && candidates[1] == other_candidates[1])
-                    {
-                        for (int m = 0; m < 3; m++)
-                        {
-                            for (int n = 0; n < 3; n++)
-                            {
-                                if ((start_row + m == i && start_col + n == j) || (start_row + m == start_row + k && start_col + n == start_col + l))
-                                    continue;
+                    if (candidates[0] == other_candidates[0] && candidates[1] == other_candidates[1]) {
+                        if (!naked_pairs_exists(pairs, pair_count, candidates[0], candidates[1])) {
+                            pairs[pair_count].val1 = candidates[0];
+                            pairs[pair_count].val2 = candidates[1];
+                            pair_count++;
+                        }
+                        for (int l = 0; l < BOARD_SIZE; l++) {
+                            if (unit[l] == cell || unit[l] == other)
+                                continue;
 
-                                Cell *remove = &(p_board->data[start_row + m][start_col + n]);
-                                if (is_candidate(remove, candidates[0]))
-                                {
-                                    unset_candidate(remove, candidates[0]);
-                                    found++;
-                                }
-                                if (is_candidate(remove, candidates[1]))
-                                {
-                                    unset_candidate(remove, candidates[1]);
-                                    found++;
-                                }
+                            Cell *remove = unit[l];
+                            if (is_candidate(remove, candidates[0])) {
+                                unset_candidate(remove, candidates[0]);
+                            }
+                            if (is_candidate(remove, candidates[1])) {
+                                unset_candidate(remove, candidates[1]);
                             }
                         }
                     }
                     free(other_candidates);
                 }
             }
-
             free(candidates);
         }
     }
-    return found;
+    return pair_count;
 }
